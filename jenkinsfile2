@@ -1,0 +1,90 @@
+pipeline {
+    agent any
+    tools {
+        jdk 'JDK21'
+        nodejs 'NodeJS'
+    }
+    
+    environment {
+        SCANNER_HOME = tool 'sonarqube-scanner'
+    }
+    
+    stages {
+        stage ('Clear workspace') {
+            steps {
+                cleanWs()
+            }
+        }
+        
+        stage ('checkout from git') {
+            steps {
+                checkout scmGit(branches: [[name: '*/main']], extensions: [], userRemoteConfigs: [[url: 'https://github.com/Rameshmamuduru/OnlineTicketPlatform-BMS.git']])
+            }
+        }
+        
+        stage ('SonarQube Analysis') {
+            steps {
+                withSonarQubeEnv('sonarqube-server') {
+                    sh '''
+                        ${SCANNER_HOME}/bin/sonar-scanner \
+                        -Dsonar.projectKey=BookMyShow \
+                        -Dsonar.projectName=BookMyShow \
+                        -Dsonar.sources=.
+                    '''
+                }
+            }
+        }
+        
+        stage ('Quality Gate') {
+            steps {
+                waitForQualityGate abortPipeline: false, credentialsId: 'sonarqube_credential'
+            }
+        }
+        
+        stage ('Docker build') {
+            steps {
+                sh ''' 
+                    echo "Building Docker image..."
+                    docker build --no-cache -t ramesh0621/bookmyshowapp:latest -f bookmyshow-app/Dockerfile bookmyshow-app
+                '''
+            }
+        }
+        
+        stage ('Docker Push to Docker-Hub') {
+            steps {
+                script {
+                    withDockerRegistry(credentialsId: 'docker_credential') {
+                        sh ''' 
+                             echo "Pushing Docker image..."
+                             docker push ramesh0621/bookmyshowapp:latest
+                         '''
+                    }
+                }
+            }
+        }
+        
+        stage ('Image Scan By Trivy') {
+            steps {
+                sh 'trivy image ramesh0621/bookmyshowapp:latest'
+            }
+        }
+        
+        stage ('Deploy to Container') {
+            steps {
+                sh '''
+                    echo 'stop and remove all the containers'
+                    docker stop bookmyshow || true
+                    docker rm bookmyshow || true
+                    
+                    echo 'Running new container from docker image on port 3000'
+                    docker run -d --restart=always --name bookmyshow -p 3000:80 ramesh0621/bookmyshowapp:latest
+                
+                '''
+                
+                
+            }
+        }
+        
+        
+    }
+}
