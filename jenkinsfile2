@@ -26,51 +26,51 @@ pipeline {
 
         stage('Checkout from Git') {
             steps {
-                checkout scmGit(
+                checkout([$class: 'GitSCM',
                     branches: [[name: '*/main']],
                     userRemoteConfigs: [[url: 'https://github.com/Rameshmamuduru/OnlineTicketPlatform-BMS.git']]
-                )
+                ])
             }
         }
 
         stage('SonarQube Analysis') {
             steps {
                 withSonarQubeEnv('sonarqube-server') {
-                    sh '''
-                    ${SCANNER_HOME}/bin/sonar-scanner \
-                    -Dsonar.projectKey=BookMyShow \
-                    -Dsonar.projectName=BookMyShow \
-                    -Dsonar.sources=.
-                    '''
+                    sh """
+                        ${SCANNER_HOME}/bin/sonar-scanner \
+                        -Dsonar.projectKey=BookMyShow \
+                        -Dsonar.projectName=BookMyShow \
+                        -Dsonar.sources=.
+                    """
                 }
             }
         }
 
         stage('Quality Gate') {
             steps {
-                waitForQualityGate abortPipeline: false, credentialsId: 'sonarqube_credential'
+                waitForQualityGate abortPipeline: false
             }
         }
 
         stage('Docker Build') {
             steps {
-                sh '''
-                echo "Building Docker image..."
-                docker build --no-cache \
-                -t ${IMAGE_NAME}:${BUILD_NUMBER} \
-                -f bookmyshow-app/Dockerfile bookmyshow-app
-                '''
+                sh """
+                    echo "Building Docker image..."
+                    docker build --no-cache \
+                    -t ${IMAGE_NAME}:${BUILD_NUMBER} \
+                    -f bookmyshow-app/Dockerfile bookmyshow-app
+                """
             }
         }
 
         stage('Docker Push') {
             steps {
                 script {
-                    withDockerRegistry(credentialsId: 'docker_credential') {
-                        sh '''
-                        echo "Pushing Docker image..."
-                        docker push ${IMAGE_NAME}:${BUILD_NUMBER}
-                        '''
+                    withDockerRegistry([credentialsId: 'docker_credential', url: '']) {
+                        sh """
+                            echo "Pushing Docker image..."
+                            docker push ${IMAGE_NAME}:${BUILD_NUMBER}
+                        """
                     }
                 }
             }
@@ -78,20 +78,19 @@ pipeline {
 
         stage('Image Scan (Trivy)') {
             steps {
-                sh '''
-                trivy image ${IMAGE_NAME}:${BUILD_NUMBER}
-                '''
+                sh "trivy image ${IMAGE_NAME}:${BUILD_NUMBER}"
             }
         }
 
         stage('Deploy') {
-          steps {
-            sh '''
-              ansible-playbook ansible/playbooks/deploy.yml -i ansible/inventory/hosts
-            '''
-          }
+            steps {
+                sh """
+                    ansible-playbook ansible/playbooks/deploy.yml -i ansible/inventory/hosts
+                """
+            }
         }
 
+    }
 
     post {
         success {
