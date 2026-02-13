@@ -88,9 +88,12 @@ pipeline {
             steps {
                 sh """
                 ssh ${ANSIBLE_USER}@${ANSIBLE_HOST} '
-                cd /home/ansible &&
+                cd /tmp
+                git clone https://github.com/Rameshmamuduru/OnlineTicketPlatform-BMS.git &&
+                cd OnlineTicketPlatform-BMS &&
                 ansible-playbook ansible/playbooks/deploy.yml \
-                -i ansible/inventory/hosts
+                -i ansible/invetory/hosts
+                rm -rf OnlineTicketPlatform-BMS
                 '
                 """
             }
