@@ -68,23 +68,6 @@ pipeline {
                 sh 'trivy image ramesh0621/bookmyshowapp:latest'
             }
         }
-        
-        stage ('Deploy to Container') {
-            steps {
-                sh '''
-                    echo 'stop and remove all the containers'
-                    docker stop bookmyshow || true
-                    docker rm bookmyshow || true
-                    
-                    echo 'Running new container from docker image on port 3000'
-                    docker run -d --restart=always --name bookmyshow -p 3000:80 ramesh0621/bookmyshowapp:latest
-                
-                '''
-                
-                
-            }
-        }
-        
 
         stage ('deploy to container by Ansible') {
             steps {
