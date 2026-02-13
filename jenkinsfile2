@@ -85,6 +85,17 @@ pipeline {
             }
         }
         
+
+        stage ('deploy to container by Ansible') {
+            steps {
+                shh '''
+                    ansible-playbook ansible/deploy.yml \
+                    -i ansible/inventory/hosts 
+                
+                '''
+
+            }
+        }
         
     }
 }
