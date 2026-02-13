@@ -1,26 +1,19 @@
-- name: Deplloy an application to kuberntes
-  hosts: k8s
-  become: true
-
-  vars:
-    kubeconfig: ~/.kube/config
+- hosts: localhost
+  connection: local
 
   tasks:
 
-
-    - name: Apply the Deploy
+    - name: Apply Deployment
       command: kubectl apply -f ../../k8s/base/deployment.yml
-      environment: 
-        KUBECONFIG: "{{ kubeconfig }}"
+      environment:
+        KUBECONFIG: /home/jenkins/.kube/config
 
-    - name: Apply the service
+    - name: Apply Service
       command: kubectl apply -f ../../k8s/base/service.yml
-      environment: 
-        KUBECONFIG: "{{ kubeconfig }}"
+      environment:
+        KUBECONFIG: /home/jenkins/.kube/config
 
-    - name: Wait for rollout to finish
+    - name: Wait for rollout
       command: kubectl rollout status deployment/myapp
       environment:
-        KUBECONFIG: "{{ kubeconfig }}"
-
-
+        KUBECONFIG: /home/jenkins/.kube/config
