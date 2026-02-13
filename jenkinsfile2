@@ -7,6 +7,8 @@ pipeline {
     
     environment {
         SCANNER_HOME = tool 'sonarqube-scanner'
+        ANSIBLE_USER = ansible
+        ANSIBLE_HOST = 172.31.35.217
     }
     
     stages {
@@ -69,16 +71,16 @@ pipeline {
             }
         }
 
-        stage ('deploy to container by Ansible') {
-            steps {
-                shh '''
-                    ansible-playbook ansible/deploy.yml \
-                    -i ansible/inventory/hosts 
-                
-                '''
+        stage('deploy to container by Ansible') {
+    steps {
+        sh '''
+            ssh ANSIBLE_USER@ANSIBLE_HOST
+            ansible-playbook ansible/deploy.yml \
+            -i ansible/inventory/hosts
+        '''
+    }
+}
 
-            }
-        }
         
     }
 }
