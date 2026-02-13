@@ -72,12 +72,14 @@ pipeline {
         }
 
         stage('deploy to container by Ansible') {
-    steps {
-        sh '''
-            ssh ANSIBLE_USER@ANSIBLE_HOST
-            ansible-playbook ansible/deploy.yml \
-            -i ansible/inventory/hosts
-        '''
+            steps {
+                sh """
+                    ssh ${ANSIBLE_USER}@${ANSIBLE_HOST} '
+                    cd /home/ansible &&
+                    ansible-playbook ansible/deploy.yml \
+                    -i ansible/inventory/hosts
+                '
+                """
     }
 }
 
