@@ -1,88 +1,108 @@
 pipeline {
     agent any
+
     tools {
         jdk 'JDK21'
         nodejs 'NodeJS'
     }
-    
+
     environment {
         SCANNER_HOME = tool 'sonarqube-scanner'
-        ANSIBLE_USER = ansible
-        ANSIBLE_HOST = 172.31.35.217
+
+        // Ansible server details
+        ANSIBLE_USER = 'ansible'
+        ANSIBLE_HOST = '172.31.35.217'
+
+        IMAGE_NAME = 'ramesh0621/bookmyshowapp'
     }
-    
+
     stages {
-        stage ('Clear workspace') {
+
+        stage('Clear workspace') {
             steps {
                 cleanWs()
             }
         }
-        
-        stage ('checkout from git') {
+
+        stage('Checkout from Git') {
             steps {
-                checkout scmGit(branches: [[name: '*/main']], extensions: [], userRemoteConfigs: [[url: 'https://github.com/Rameshmamuduru/OnlineTicketPlatform-BMS.git']])
+                checkout scmGit(
+                    branches: [[name: '*/main']],
+                    userRemoteConfigs: [[url: 'https://github.com/Rameshmamuduru/OnlineTicketPlatform-BMS.git']]
+                )
             }
         }
-        
-        stage ('SonarQube Analysis') {
+
+        stage('SonarQube Analysis') {
             steps {
                 withSonarQubeEnv('sonarqube-server') {
                     sh '''
-                        ${SCANNER_HOME}/bin/sonar-scanner \
-                        -Dsonar.projectKey=BookMyShow \
-                        -Dsonar.projectName=BookMyShow \
-                        -Dsonar.sources=.
+                    ${SCANNER_HOME}/bin/sonar-scanner \
+                    -Dsonar.projectKey=BookMyShow \
+                    -Dsonar.projectName=BookMyShow \
+                    -Dsonar.sources=.
                     '''
                 }
             }
         }
-        
-        stage ('Quality Gate') {
+
+        stage('Quality Gate') {
             steps {
                 waitForQualityGate abortPipeline: false, credentialsId: 'sonarqube_credential'
             }
         }
-        
-        stage ('Docker build') {
+
+        stage('Docker Build') {
             steps {
-                sh ''' 
-                    echo "Building Docker image..."
-                    docker build --no-cache -t ramesh0621/bookmyshowapp:latest -f bookmyshow-app/Dockerfile bookmyshow-app
+                sh '''
+                echo "Building Docker image..."
+                docker build --no-cache \
+                -t ${IMAGE_NAME}:${BUILD_NUMBER} \
+                -f bookmyshow-app/Dockerfile bookmyshow-app
                 '''
             }
         }
-        
-        stage ('Docker Push to Docker-Hub') {
+
+        stage('Docker Push') {
             steps {
                 script {
                     withDockerRegistry(credentialsId: 'docker_credential') {
-                        sh ''' 
-                             echo "Pushing Docker image..."
-                             docker push ramesh0621/bookmyshowapp:latest
-                         '''
+                        sh '''
+                        echo "Pushing Docker image..."
+                        docker push ${IMAGE_NAME}:${BUILD_NUMBER}
+                        '''
                     }
                 }
             }
         }
-        
-        stage ('Image Scan By Trivy') {
+
+        stage('Image Scan (Trivy)') {
             steps {
-                sh 'trivy image ramesh0621/bookmyshowapp:latest'
+                sh '''
+                trivy image ${IMAGE_NAME}:${BUILD_NUMBER}
+                '''
             }
         }
 
-        stage('deploy to container by Ansible') {
+        stage('Deploy to Kubernetes via Ansible') {
             steps {
                 sh """
-                    ssh ${ANSIBLE_USER}@${ANSIBLE_HOST} '
-                    cd /home/ansible &&
-                    ansible-playbook ansible/deploy.yml \
-                    -i ansible/inventory/hosts
+                ssh ${ANSIBLE_USER}@${ANSIBLE_HOST} '
+                cd /home/ansible &&
+                ansible-playbook ansible/playbooks/deploy.yml \
+                -i ansible/inventory/hosts
                 '
                 """
+            }
+        }
     }
-}
 
-        
+    post {
+        success {
+            echo "Pipeline completed successfully"
+        }
+        failure {
+            echo "Pipeline failed"
+        }
     }
 }
