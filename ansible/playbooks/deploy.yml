@@ -9,12 +9,12 @@
 
 
     - name: Apply the Deploy
-      command: kubectl apply -f k8s/base/deployment.yml
+      command: kubectl apply -f ../../k8s/base/deployment.yml
       environment: 
         KUBECONFIG: "{{ kubeconfig }}"
 
     - name: Apply the service
-      command: kubectl apply -f k8s/base/service.yml
+      command: kubectl apply -f ../../k8s/base/service.yml
       environment: 
         KUBECONFIG: "{{ kubeconfig }}"
 
