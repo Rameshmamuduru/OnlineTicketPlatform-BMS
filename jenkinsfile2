@@ -84,22 +84,14 @@ pipeline {
             }
         }
 
-        stage('Deploy to Kubernetes via Ansible') {
-            steps {
-                sh """
-                    ssh ${ANSIBLE_USER}@${ANSIBLE_HOST} '
-                    cd /tmp &&
-                    rm -rf OnlineTicketPlatform-BMS &&
-                    git clone https://github.com/Rameshmamuduru/OnlineTicketPlatform-BMS.git &&
-                    cd OnlineTicketPlatform-BMS &&
-                    ansible-playbook ansible/playbooks/deploy.yml \
-                    -i ansible/invetory/hosts &&
-                    rm -rf /tmp/OnlineTicketPlatform-BMS
-                '
-                """
-            }
+        stage('Deploy') {
+          steps {
+            sh '''
+              ansible-playbook ansible/playbooks/deploy.yml -i ansible/inventory/hosts
+            '''
+          }
         }
-    }
+
 
     post {
         success {
