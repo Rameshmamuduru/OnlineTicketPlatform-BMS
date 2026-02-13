@@ -87,14 +87,14 @@ pipeline {
         stage('Deploy to Kubernetes via Ansible') {
             steps {
                 sh """
-               ssh ansible@172.31.35.217 "
-                cd /tmp &&
-                rm -rf OnlineTicketPlatform-BMS &&
-                git clone https://github.com/Rameshmamuduru/OnlineTicketPlatform-BMS.git &&
-                cd OnlineTicketPlatform-BMS &&
-                ansible-playbook ansible/playbooks/deploy.yml \
-                -i ansible/invetory/hosts &&
-                rm -rf /tmp/OnlineTicketPlatform-BMS
+                    ssh ${ANSIBLE_USER}@${ANSIBLE_HOST} '
+                    cd /tmp &&
+                    rm -rf OnlineTicketPlatform-BMS &&
+                    git clone https://github.com/Rameshmamuduru/OnlineTicketPlatform-BMS.git &&
+                    cd OnlineTicketPlatform-BMS &&
+                    ansible-playbook ansible/playbooks/deploy.yml \
+                    -i ansible/invetory/hosts &&
+                    rm -rf /tmp/OnlineTicketPlatform-BMS
                 '
                 """
             }
