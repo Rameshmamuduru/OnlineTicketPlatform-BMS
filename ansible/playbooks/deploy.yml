@@ -6,14 +6,14 @@
     - name: Apply Deployment
       command: kubectl apply -f ../../k8s/base/deployment.yml
       environment:
-        KUBECONFIG: /home/jenkins/.kube/config
+        KUBECONFIG: /var/lib/jenkins/.kube/config
 
     - name: Apply Service
       command: kubectl apply -f ../../k8s/base/service.yml
       environment:
-        KUBECONFIG: /home/jenkins/.kube/config
+        KUBECONFIG: /var/lib/jenkins/.kube/config
 
     - name: Wait for rollout
       command: kubectl rollout status deployment/myapp
       environment:
-        KUBECONFIG: /home/jenkins/.kube/config
+        KUBECONFIG: /var/lib/jenkins/.kube/config
