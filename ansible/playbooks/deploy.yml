@@ -1,19 +1,15 @@
+
 - hosts: localhost
-  connection: local
-
+  gather_facts: false
   tasks:
-
     - name: Apply Deployment
-      command: kubectl apply -f ../../k8s/base/deployment.yml
-      environment:
-        KUBECONFIG: /var/lib/jenkins/.kube/config
+      k8s:
+        kubeconfig: /var/lib/jenkins/.kube/config
+        state: present
+        definition: ../../k8s/base/deployment.yml
 
     - name: Apply Service
-      command: kubectl apply -f ../../k8s/base/service.yml
-      environment:
-        KUBECONFIG: /var/lib/jenkins/.kube/config
-
-    - name: Wait for rollout
-      command: kubectl rollout status deployment/myapp
-      environment:
-        KUBECONFIG: /var/lib/jenkins/.kube/config
+      k8s:
+        kubeconfig: /var/lib/jenkins/.kube/config
+        state: present
+        definition: ../../k8s/base/service.yml
