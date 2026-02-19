@@ -1,0 +1,11 @@
+replicaCount: 1
+
+image:
+  repository: ramesh0621/bookmyshow
+  tag: latest
+
+service:
+  type: NodePort
+  port: 80
+
+namespace: bookmyshow-stage
