@@ -2,6 +2,14 @@
 - hosts: localhost
   gather_facts: false
   tasks:
+
+    - name: Clone or Pull GitHub Repository
+      git:
+        repo: https://github.com/Rameshmamuduru/OnlineTicketPlatform-BMS.git
+        dest: /var/lib/jenkins/workspace/app-code
+        version: main
+        force: yes
+        
     - name: Apply Deployment
       k8s:
         kubeconfig: /var/lib/jenkins/.kube/config
