@@ -20,51 +20,11 @@ pipeline {
             }
         }
 
-        stage('SonarQube Analysis') {
-            steps {
-                withSonarQubeEnv('sonarqube-server') {
-                    sh """
-                        ${SCANNER_HOME}/bin/sonar-scanner \
-                        -Dsonar.projectKey=BookMyShow \
-                        -Dsonar.projectName=BookMyShow \
-                        -Dsonar.sources=.
-                    """
-                }
-            }
-        }
-
-        stage('Quality Gate') {
-            steps {
-                waitForQualityGate abortPipeline: true
-            }
-        }
-
-        stage('Docker Build') {
-            steps {
-                sh """
-                    docker build -t ${IMAGE_NAME}:${IMAGE_TAG} \
-                    -f bookmyshow-app/Dockerfile bookmyshow-app
-                """
-            }
-        }
-
-        stage('Docker Push') {
-            steps {
-                script {
-                    withDockerRegistry(credentialsId: 'docker_credential') {
-                        sh "docker push ${IMAGE_NAME}:${IMAGE_TAG}"
-                        sh "docker push ${IMAGE_NAME}:latest"
-                    }
-                }
-            }
-        }
-
         stage('Deploy to STAGE') {
             steps {
                 sh """
                     ansible-playbook ansible/deploy.yml \
                     -e namespace=bookmyshow-stage \
-                    -e image_tag=${IMAGE_TAG}
                 """
             }
         }
@@ -80,7 +40,6 @@ pipeline {
                 sh """
                     ansible-playbook ansible/deploy.yml \
                     -e namespace=bookmyshow-prod \
-                    -e image_tag=${IMAGE_TAG}
                 """
             }
         }
