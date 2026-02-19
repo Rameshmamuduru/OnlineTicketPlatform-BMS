@@ -14,6 +14,8 @@ pipeline {
 
     stages {
 
+        stages {
+
         stage('Clear workspace') {
             steps {
                 cleanWs()
@@ -26,11 +28,56 @@ pipeline {
             }
         }
 
-        stage('Deploy to STAGE') {
+        stage('Trivy Filesystem Scan') {
+            steps {
+                // Install Trivy (optional if already on agent)
+                sh 'which trivy || curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh'
+                
+                // Run Trivy scan on workspace
+                sh 'trivy fs --severity HIGH,CRITICAL --format table ${WORKSPACE}'
+
+                // Optional: save output to a file
+                sh 'trivy fs --severity HIGH,CRITICAL --format json ${WORKSPACE} > trivy-report.json'
+            }
+        }
+    }
+
+
+        stage('Docker Build') {
+            steps {
+                sh """
+                    echo "Building Docker image..."
+                    docker build --no-cache \
+                    -t ${IMAGE_NAME}:${BUILD_NUMBER} \
+                    -f bookmyshow-app/Dockerfile bookmyshow-app
+                """
+            }
+        }
+
+        stage('Docker Push') {
+            steps {
+                script {
+                    withDockerRegistry([credentialsId: 'docker_credential', url: '']) {
+                        sh """
+                            echo "Pushing Docker image..."
+                            docker push ${IMAGE_NAME}:${BUILD_NUMBER}
+                        """
+                    }
+                }
+            }
+        }
+
+        stage('Image Scan (Trivy)') {
+            steps {
+                sh "trivy image ${IMAGE_NAME}:${BUILD_NUMBER}"
+            }
+        }
+
+        stage('Deploy to STAGE ') {
             steps {
                 sh """
                     ansible-playbook ansible/playbooks/deploy.yml \
-                    -e namespace=bookmyshow-stage
+                    -e namespace=bookmyshow-stage \
                 """
             }
         }
@@ -45,13 +92,15 @@ pipeline {
             steps {
                 sh """
                     ansible-playbook ansible/playbooks/deploy.yml \
-                    -e namespace=bookmyshow-prod
+                    -e namespace=bookmyshow-prod \
                 """
             }
         }
     }
+}
 
-    post {
+
+post {
         success {
             echo "Pipeline completed successfully"
         }
@@ -59,4 +108,3 @@ pipeline {
             echo "Pipeline failed"
         }
     }
-}
