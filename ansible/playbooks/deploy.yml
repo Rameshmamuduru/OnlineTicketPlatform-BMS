@@ -1,5 +1,5 @@
 
-- hosts: localhost
+- hosts: k8s
   gather_facts: false
   tasks:
 
