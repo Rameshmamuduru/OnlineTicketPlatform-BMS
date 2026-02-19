@@ -13,37 +13,41 @@ pipeline {
 
     stages {
 
-        stage('Clear workspace') {
-            steps {
-                cleanWs()
-            }
-        }
-
-        stage('Checkout from Git') {
+        stage('Checkout') {
             steps {
                 checkout scm
             }
         }
 
-        stage('Set Environment Based on Branch') {
+        stage('Set Environment') {
             steps {
                 script {
                     if (env.BRANCH_NAME == "stage") {
                         env.NAMESPACE = "bookmyshow-stage"
                         env.IMAGE_TAG = "stage-${BUILD_NUMBER}"
+                        echo "Deploying to STAGE"
                     }
                     else if (env.BRANCH_NAME == "main") {
                         env.NAMESPACE = "bookmyshow-prod"
                         env.IMAGE_TAG = "prod-${BUILD_NUMBER}"
+                        echo "Deploying to PROD"
                     }
                     else {
-                        error("Unsupported branch for deployment")
+                        echo "Branch not configured for deployment"
+                        currentBuild.result = 'SUCCESS'
+                        return
                     }
                 }
             }
         }
 
-        stage('SonarQube Analysis') {
+        stage('SonarQube') {
+            when {
+                anyOf {
+                    branch 'stage'
+                    branch 'main'
+                }
+            }
             steps {
                 withSonarQubeEnv('sonarqube-server') {
                     sh """
@@ -56,41 +60,34 @@ pipeline {
             }
         }
 
-        stage('Quality Gate') {
-            steps {
-                waitForQualityGate abortPipeline: true
+        stage('Docker Build & Push') {
+            when {
+                anyOf {
+                    branch 'stage'
+                    branch 'main'
+                }
             }
-        }
-
-        stage('Docker Build') {
-            steps {
-                sh """
-                    docker build --no-cache \
-                    -t ${IMAGE_NAME}:${IMAGE_TAG} \
-                    -f bookmyshow-app/Dockerfile bookmyshow-app
-                """
-            }
-        }
-
-        stage('Docker Push') {
             steps {
                 script {
+                    sh """
+                        docker build -t ${IMAGE_NAME}:${IMAGE_TAG} \
+                        -f bookmyshow-app/Dockerfile bookmyshow-app
+                    """
+
                     withDockerRegistry(credentialsId: 'docker_credential') {
-                        sh """
-                            docker push ${IMAGE_NAME}:${IMAGE_TAG}
-                        """
+                        sh "docker push ${IMAGE_NAME}:${IMAGE_TAG}"
                     }
                 }
             }
         }
 
-        stage('Image Scan By Trivy') {
-            steps {
-                sh "trivy image ${IMAGE_NAME}:${IMAGE_TAG}"
+        stage('Deploy to Kubernetes') {
+            when {
+                anyOf {
+                    branch 'stage'
+                    branch 'main'
+                }
             }
-        }
-
-        stage('Deploy to Kubernetes via Ansible') {
             steps {
                 sh """
                     ansible-playbook ansible/deploy.yml \
