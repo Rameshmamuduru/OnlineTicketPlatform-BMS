@@ -63,7 +63,6 @@ pipeline {
             steps {
                 sh """
                     ansible-playbook ansible/deploy.yml \
-                    -i localhost, \
                     -e namespace=bookmyshow-stage \
                     -e image_tag=${IMAGE_TAG}
                 """
@@ -80,7 +79,6 @@ pipeline {
             steps {
                 sh """
                     ansible-playbook ansible/deploy.yml \
-                    -i localhost, \
                     -e namespace=bookmyshow-prod \
                     -e image_tag=${IMAGE_TAG}
                 """
