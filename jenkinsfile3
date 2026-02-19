@@ -20,7 +20,7 @@ pipeline {
             }
         }
 
-        stage('Deploy to STAGE') {
+        stage('Deploy to STAGE ') {
             steps {
                 sh """
                     ansible-playbook ansible/playbooks/deploy.yml \
