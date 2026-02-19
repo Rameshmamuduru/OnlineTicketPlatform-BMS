@@ -2,6 +2,7 @@
   gather_facts: false
 
   vars:
+    ansible_python_interpreter: /home/jenkins/ansible-env/bin/python
     kubeconfig_path: /var/lib/jenkins/.kube/config
     tmp_dir: /var/lib/jenkins/workspace/test
     namespaces_dir: "{{ tmp_dir }}/k8s/namespaces"
