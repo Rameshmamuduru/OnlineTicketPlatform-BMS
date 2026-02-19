@@ -14,9 +14,66 @@ pipeline {
 
     stages {
 
+        stages {
+
+        stage('Clear workspace') {
+            steps {
+                cleanWs()
+            }
+        }
+
         stage('Checkout') {
             steps {
                 checkout scm
+            }
+        }
+
+        stage('SonarQube Analysis') {
+            steps {
+                withSonarQubeEnv('sonarqube-server') {
+                    sh """
+                        ${SCANNER_HOME}/bin/sonar-scanner \
+                        -Dsonar.projectKey=BookMyShow \
+                        -Dsonar.projectName=BookMyShow \
+                        -Dsonar.sources=.
+                    """
+                }
+            }
+        }
+
+        stage('Quality Gate') {
+            steps {
+                waitForQualityGate abortPipeline: false
+            }
+        }
+
+        stage('Docker Build') {
+            steps {
+                sh """
+                    echo "Building Docker image..."
+                    docker build --no-cache \
+                    -t ${IMAGE_NAME}:${BUILD_NUMBER} \
+                    -f bookmyshow-app/Dockerfile bookmyshow-app
+                """
+            }
+        }
+
+        stage('Docker Push') {
+            steps {
+                script {
+                    withDockerRegistry([credentialsId: 'docker_credential', url: '']) {
+                        sh """
+                            echo "Pushing Docker image..."
+                            docker push ${IMAGE_NAME}:${BUILD_NUMBER}
+                        """
+                    }
+                }
+            }
+        }
+
+        stage('Image Scan (Trivy)') {
+            steps {
+                sh "trivy image ${IMAGE_NAME}:${BUILD_NUMBER}"
             }
         }
 
