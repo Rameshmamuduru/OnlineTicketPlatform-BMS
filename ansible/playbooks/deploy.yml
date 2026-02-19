@@ -7,16 +7,16 @@
       kubernetes.core.k8s:
         kubeconfig: /var/lib/jenkins/.kube/config
         state: present
-        src: ../../k8s/namespaces/*.yml
+        src: k8s/namespaces/*.yml
         
     - name: Apply Deployment
       kubernetes.core.k8s:
         kubeconfig: /var/lib/jenkins/.kube/config
         state: present
-        src: ../../k8s/base/deployment.yml
+        src: k8s/base/deployment.yml
 
     - name: Apply Service
       kubernetes.core.k8s:
         kubeconfig: /var/lib/jenkins/.kube/config
         state: present
-        src: ../../k8s/base/service.yml
+        src: k8s/base/service.yml
