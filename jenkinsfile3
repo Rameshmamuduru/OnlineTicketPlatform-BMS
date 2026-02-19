@@ -23,7 +23,7 @@ pipeline {
         stage('Deploy to STAGE') {
             steps {
                 sh """
-                    ansible-playbook ansible/deploy.yml \
+                    ansible-playbook ansible/playbooks/deploy.yml \
                     -e namespace=bookmyshow-stage \
                 """
             }
@@ -38,7 +38,7 @@ pipeline {
         stage('Deploy to PROD') {
             steps {
                 sh """
-                    ansible-playbook ansible/deploy.yml \
+                    ansible-playbook ansible/playbooks/deploy.yml \
                     -e namespace=bookmyshow-prod \
                 """
             }
