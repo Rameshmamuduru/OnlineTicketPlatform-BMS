@@ -1,23 +1,28 @@
-
 - hosts: localhost
   gather_facts: false
 
   vars:
     kubeconfig_path: /var/lib/jenkins/.kube/config
     tmp_dir: /var/lib/jenkins/workspace/test
-    namespace: "{{ namespace | default('dev') }}"    # Passed from Jenkins pipeline
+    # Map Jenkins namespace names to actual YAML files
+    namespace_file_map:
+      stage: stage_namespace.yml
+      prod: prod_namespace.yml
+      dev: dev_namespace.yml
+    namespace: "{{ namespace | default('dev') }}"
     deployment_file: "{{ tmp_dir }}/k8s/base/deployment.yml"
     service_file: "{{ tmp_dir }}/k8s/base/service.yml"
-    
+    namespace_file: "{{ namespace_file_map[namespace] }}"
+
   tasks:
 
-    - name: Apply all namespaces
+    - name: Apply namespace
       kubernetes.core.k8s:
         kubeconfig: "{{ kubeconfig_path }}"
         state: present
-        src: "{{ tmp_dir }}/k8s/namespaces/{{ namespace }}_namespace.yml"
+        src: "{{ tmp_dir }}/k8s/namespaces/{{ namespace_file }}"
         remote_src: yes
-        
+
     - name: Apply Deployment
       kubernetes.core.k8s:
         kubeconfig: "{{ kubeconfig_path }}"
