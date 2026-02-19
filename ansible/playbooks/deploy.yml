@@ -4,26 +4,31 @@
   vars:
     kubeconfig_path: /var/lib/jenkins/.kube/config
     tmp_dir: /var/lib/jenkins/workspace/test
-    # Map Jenkins namespace names to actual YAML files
-    namespace_file_map:
-      stage: stage_namespace.yml
-      prod: prod_namespace.yml
-      dev: dev_namespace.yml
-    namespace: "{{ namespace | default('dev') }}"
+    namespaces_dir: "{{ tmp_dir }}/k8s/namespaces"
     deployment_file: "{{ tmp_dir }}/k8s/base/deployment.yml"
     service_file: "{{ tmp_dir }}/k8s/base/service.yml"
-    namespace_file: "{{ namespace_file_map[namespace] }}"
+    # Namespace passed from Jenkins
+    namespace: "{{ namespace }}"  # no default; must be provided by Jenkins
 
   tasks:
 
-    - name: Apply namespace
+    - name: Find all namespace YAML files
+      find:
+        paths: "{{ namespaces_dir }}"
+        patterns: "*.yml"
+      register: namespace_files
+
+    - name: Apply all namespaces
       kubernetes.core.k8s:
         kubeconfig: "{{ kubeconfig_path }}"
         state: present
-        src: "{{ tmp_dir }}/k8s/namespaces/{{ namespace_file }}"
+        src: "{{ item.path }}"
         remote_src: yes
+      loop: "{{ namespace_files.files }}"
+      loop_control:
+        label: "{{ item.path }}"
 
-    - name: Apply Deployment
+    - name: Apply Deployment in Jenkins-specified namespace
       kubernetes.core.k8s:
         kubeconfig: "{{ kubeconfig_path }}"
         state: present
@@ -31,7 +36,7 @@
         namespace: "{{ namespace }}"
         remote_src: yes
 
-    - name: Apply Service
+    - name: Apply Service in Jenkins-specified namespace
       kubernetes.core.k8s:
         kubeconfig: "{{ kubeconfig_path }}"
         state: present
