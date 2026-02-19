@@ -14,8 +14,6 @@ pipeline {
 
     stages {
 
-        stages {
-
         stage('Clear workspace') {
             steps {
                 cleanWs()
@@ -40,16 +38,14 @@ pipeline {
                 sh 'trivy fs --severity HIGH,CRITICAL --format json ${WORKSPACE} > trivy-report.json'
             }
         }
-    }
-
 
         stage('Docker Build') {
             steps {
                 sh """
                     echo "Building Docker image..."
                     docker build --no-cache \
-                    -t ${IMAGE_NAME}:${BUILD_NUMBER} \
-                    -f bookmyshow-app/Dockerfile bookmyshow-app
+                        -t ${IMAGE_NAME}:${BUILD_NUMBER} \
+                        -f bookmyshow-app/Dockerfile bookmyshow-app
                 """
             }
         }
@@ -73,11 +69,11 @@ pipeline {
             }
         }
 
-        stage('Deploy to STAGE ') {
+        stage('Deploy to STAGE') {
             steps {
                 sh """
                     ansible-playbook ansible/playbooks/deploy.yml \
-                    -e namespace=bookmyshow-stage \
+                        -e namespace=bookmyshow-stage
                 """
             }
         }
@@ -92,15 +88,13 @@ pipeline {
             steps {
                 sh """
                     ansible-playbook ansible/playbooks/deploy.yml \
-                    -e namespace=bookmyshow-prod \
+                        -e namespace=bookmyshow-prod
                 """
             }
         }
     }
-}
 
-
-post {
+    post {
         success {
             echo "Pipeline completed successfully"
         }
@@ -108,3 +102,4 @@ post {
             echo "Pipeline failed"
         }
     }
+}
