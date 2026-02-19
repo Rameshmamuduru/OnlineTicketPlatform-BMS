@@ -6,7 +6,7 @@
     - name: Apply all namespaces
       kubernetes.core.k8s:
         state: present
-        src: ../../k8s/namespaces/*yml
+        src: ../../k8s/namespaces/*.yml
         
     - name: Apply Deployment
       kubernetes.core.k8s:
