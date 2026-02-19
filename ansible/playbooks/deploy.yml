@@ -31,12 +31,10 @@
       kubernetes.core.k8s:
         kubeconfig: "{{ kubeconfig_path }}"
         state: present
-        src: "{{ deployment_file }}"
-        namespace: "{{ namespace }}"
+        definition: "{{ lookup('template', deployment_file) }}"
 
     - name: Apply Service in Jenkins-specified namespace
       kubernetes.core.k8s:
         kubeconfig: "{{ kubeconfig_path }}"
         state: present
-        src: "{{ service_file }}"
-        namespace: "{{ namespace }}"
+        definition: "{{ lookup('template', service_file) }}"
