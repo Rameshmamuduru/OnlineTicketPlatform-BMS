@@ -53,6 +53,7 @@ pipeline {
                 script {
                     withDockerRegistry(credentialsId: 'docker_credential') {
                         sh "docker push ${IMAGE_NAME}:${IMAGE_TAG}"
+                        sh "docker push ${IMAGE_NAME}:latest"
                     }
                 }
             }
