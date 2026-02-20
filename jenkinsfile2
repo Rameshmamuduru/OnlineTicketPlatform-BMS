@@ -52,13 +52,26 @@ pipeline {
             }
         }
 
+        stage('Trivy Filesystem Scan') {
+            steps {
+                // Install Trivy (optional if already on agent)
+                sh 'which trivy || curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh'
+                
+                // Run Trivy scan on workspace
+                sh 'trivy fs --severity HIGH,CRITICAL --format table ${WORKSPACE}'
+
+                // Optional: save output to a file
+                sh 'trivy fs --severity HIGH,CRITICAL --format json ${WORKSPACE} > trivy-report.json'
+            }
+        }
+
         stage('Docker Build') {
             steps {
                 sh """
                     echo "Building Docker image..."
                     docker build --no-cache \
-                    -t ${IMAGE_NAME}:${BUILD_NUMBER} \
-                    -f bookmyshow-app/Dockerfile bookmyshow-app
+                        -t ${IMAGE_NAME}:${BUILD_NUMBER} \
+                        -f bookmyshow-app/Dockerfile bookmyshow-app
                 """
             }
         }
@@ -82,14 +95,29 @@ pipeline {
             }
         }
 
-        stage('Deploy') {
+        stage('Deploy to STAGE') {
             steps {
                 sh """
-                    ansible-playbook ansible/playbooks/deploy.yml -i ansible/inventory/hosts
+                    ansible-playbook ansible/playbooks/deploy.yml \
+                        -e namespace=bookmyshow-stage
                 """
             }
         }
 
+        stage('Approval for PROD') {
+            steps {
+                input message: "Deploy to Production?"
+            }
+        }
+
+        stage('Deploy to PROD') {
+            steps {
+                sh """
+                    ansible-playbook ansible/playbooks/deploy.yml \
+                        -e namespace=bookmyshow-prod
+                """
+            }
+        }
     }
 
     post {
